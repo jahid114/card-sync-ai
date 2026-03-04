@@ -29,15 +29,19 @@ export const DiffFieldRow: React.FC<DiffFieldRowProps> = ({ diff, onUseScanned, 
           : 'border-border bg-card'
       )}
     >
-      {diff.isDifferent && (
-        <div className="flex items-center gap-1.5 mb-3 text-warning">
-          <AlertTriangle className="h-3 w-3" />
-          <span className="text-[11px] font-medium">Values differ</span>
-        </div>
-      )}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold text-foreground">{diff.field}</p>
+        {diff.isDifferent && (
+          <div className="flex items-center gap-1.5 text-warning">
+            <AlertTriangle className="h-3 w-3" />
+            <span className="text-[11px] font-medium">Differs</span>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <span className="erp-field-label">Scanned</span>
+        <div className="space-y-1">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-primary/70">Scanned</span>
           {editing ? (
             <Input
               value={editValue}
@@ -45,38 +49,32 @@ export const DiffFieldRow: React.FC<DiffFieldRowProps> = ({ diff, onUseScanned, 
               onBlur={handleSave}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               autoFocus
-              className="h-8 text-sm rounded-lg"
+              className="h-8 text-sm rounded-lg border-primary/30"
             />
           ) : (
             <div
               className={cn(
-                'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm transition-colors cursor-pointer',
-                'hover:bg-accent',
+                'group flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm transition-colors cursor-pointer',
+                'hover:bg-accent border border-transparent hover:border-border',
                 diff.isDifferent && 'font-semibold'
               )}
-              onClick={onUseScanned}
+              onClick={() => { setEditValue(diff.scanned); setEditing(true); }}
             >
               <span className="flex-1 truncate">{diff.scanned || '—'}</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); setEditValue(diff.scanned); setEditing(true); }}
-                className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
+              <Pencil className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-60 text-muted-foreground transition-opacity" />
             </div>
           )}
         </div>
-        <div className="space-y-1.5">
-          <span className="erp-field-label">Database</span>
+
+        <div className="space-y-1">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">Existing</span>
           <div
-            className="flex items-center rounded-lg px-2.5 py-1.5 text-sm transition-colors cursor-pointer hover:bg-accent"
-            onClick={onUseExisting}
+            className="flex items-center rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground"
           >
-            <span className="truncate text-muted-foreground">{diff.existing || '—'}</span>
+            <span className="truncate">{diff.existing || '—'}</span>
           </div>
         </div>
       </div>
-      <p className="erp-field-label mt-2">{diff.field}</p>
     </div>
   );
 };
