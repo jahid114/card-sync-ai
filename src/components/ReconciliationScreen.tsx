@@ -347,36 +347,33 @@ const EditableContactRow: React.FC<{ type: string; value: string; vcardType: str
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3.5 transition-colors hover:border-primary/20">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
-        <ContactIcon type={type} />
-      </div>
-      <div className="flex-1 min-w-0">
+    <div className="rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/20">
+      <div className="flex items-center justify-between mb-1">
         <p className="erp-field-label">{type}</p>
-        {editing ? (
-          <Input
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            autoFocus
-            className="mt-0.5 h-8 text-sm rounded-lg"
-          />
-        ) : (
-          <div className="flex items-center gap-2 group">
-            <p className="text-sm font-medium text-foreground flex-1 truncate">{value}</p>
-            <button
-              onClick={() => { setLocalValue(value); setEditing(true); }}
-              className="shrink-0 opacity-40 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-            >
-              <Pencil className="h-3 w-3" />
-            </button>
-          </div>
-        )}
+        <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+          {vcardType}
+        </span>
       </div>
-      <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
-        {vcardType}
-      </span>
+      {editing ? (
+        <Input
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+          autoFocus
+          className="h-8 text-sm rounded-lg border-primary/30 bg-accent/50"
+        />
+      ) : (
+        <div className="flex items-center gap-2 group">
+          <p className="erp-field-value flex-1">{value || '—'}</p>
+          <button
+            onClick={() => { setLocalValue(value); setEditing(true); }}
+            className="shrink-0 opacity-40 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
