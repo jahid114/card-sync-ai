@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DiffFieldRow } from '@/components/DiffFieldRow';
 import { useLazySearchPartiesQuery, useGetAddressesQuery, useGetContactsQuery } from '@/store/trytonApi';
-import { User, MapPin, Phone, Check, X, Plus, Loader2, Pencil } from 'lucide-react';
+import { User, MapPin, Phone, Check, X, Plus, Loader2, Pencil, ArrowRight } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
-// Field-to-DraftParty key mapping
 const PARTY_FIELD_MAP: Record<string, string> = {
   'First Name': 'pfafirstname',
   'Family Name': 'pfafamilyname',
@@ -33,44 +32,27 @@ const PARTY_FIELD_MAP: Record<string, string> = {
 export const ReconciliationScreen: React.FC = () => {
   const store = useReconciliationStore();
   const {
-    ocrResult,
-    draftParty,
-    draftAddresses,
-    draftContacts,
-    matchedParty,
-    matchedAddresses,
-    matchedContacts,
-    partyDiffs,
-    step,
-    setMatchedData,
-    clearMatchedData,
-    computePartyDiffs,
-    setReconciliationAction,
-    setStep,
-    updateDraftParty,
-    updateDraftAddress,
-    updateDraftContact,
-    reset,
+    ocrResult, draftParty, draftAddresses, draftContacts,
+    matchedParty, matchedAddresses, matchedContacts,
+    partyDiffs, step,
+    setMatchedData, clearMatchedData, computePartyDiffs,
+    setReconciliationAction, setStep, updateDraftParty,
+    updateDraftAddress, updateDraftContact, reset,
   } = store;
 
   const [searchParties, { isFetching: isSearching }] = useLazySearchPartiesQuery();
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingAction, setPendingAction] = useState<'create' | 'update' | null>(null);
 
-  const { data: existingAddresses } = useGetAddressesQuery(matchedParty?.id ?? 0, {
-    skip: !matchedParty,
-  });
-  const { data: existingContacts } = useGetContactsQuery(matchedParty?.id ?? 0, {
-    skip: !matchedParty,
-  });
+  const { data: existingAddresses } = useGetAddressesQuery(matchedParty?.id ?? 0, { skip: !matchedParty });
+  const { data: existingContacts } = useGetContactsQuery(matchedParty?.id ?? 0, { skip: !matchedParty });
 
   React.useEffect(() => {
     if (step === 'matching' && draftParty) {
       const searchTerm = draftParty.pfafamilyname || draftParty.name;
       searchParties(searchTerm).then((result) => {
         if (result.data && result.data.length > 0) {
-          const party = result.data[0];
-          setMatchedData(party, [], []);
+          setMatchedData(result.data[0], [], []);
         } else {
           clearMatchedData();
         }
@@ -97,9 +79,7 @@ export const ReconciliationScreen: React.FC = () => {
       setReconciliationAction(pendingAction);
       setStep('done');
       toast.success(
-        pendingAction === 'create'
-          ? 'New party will be created'
-          : 'Existing party will be updated'
+        pendingAction === 'create' ? 'New party will be created' : 'Existing party will be updated'
       );
     }
     setShowConfirm(false);
@@ -121,8 +101,10 @@ export const ReconciliationScreen: React.FC = () => {
 
   if (step === 'matching' || isSearching) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center gap-4 py-20 animate-fade-in">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
         <p className="text-sm text-muted-foreground">Searching for existing records…</p>
       </div>
     );
@@ -130,13 +112,16 @@ export const ReconciliationScreen: React.FC = () => {
 
   if (step === 'done') {
     return (
-      <div className="flex flex-col items-center gap-4 py-16 animate-slide-up">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+      <div className="flex flex-col items-center gap-5 py-20 animate-slide-up">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success/10">
           <Check className="h-8 w-8 text-success" />
         </div>
-        <h2 className="text-lg font-semibold">Done!</h2>
-        <p className="text-sm text-muted-foreground">Record has been processed successfully.</p>
-        <Button onClick={reset} variant="outline">
+        <div className="text-center space-y-1">
+          <h2 className="text-lg font-bold">All Done!</h2>
+          <p className="text-sm text-muted-foreground">Record processed successfully</p>
+        </div>
+        <Button onClick={reset} variant="outline" className="rounded-xl mt-2">
+          <ArrowRight className="mr-2 h-4 w-4" />
           Scan Another Card
         </Button>
       </div>
@@ -144,44 +129,39 @@ export const ReconciliationScreen: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 pb-24 pt-4 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Reconciliation</h2>
-          <p className="text-xs text-muted-foreground">
-            {matchedParty
-              ? `Matched: ${matchedParty.name} (${matchedParty.code})`
-              : 'No existing match found'}
-          </p>
+    <div className="flex flex-col gap-5 px-5 pb-28 pt-5 animate-slide-up">
+      {/* Status Badge */}
+      <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
+          matchedParty
+            ? 'bg-success/10 text-success'
+            : 'bg-accent text-accent-foreground'
+        }`}>
+          <div className={`h-1.5 w-1.5 rounded-full ${matchedParty ? 'bg-success' : 'bg-muted-foreground'}`} />
+          {matchedParty ? `Matched: ${matchedParty.name}` : 'No match found'}
         </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="general" className="gap-1 text-xs">
+        <TabsList className="grid w-full grid-cols-3 rounded-xl bg-muted p-1 h-11">
+          <TabsTrigger value="general" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-sm">
             <User className="h-3.5 w-3.5" />
             General
           </TabsTrigger>
-          <TabsTrigger value="address" className="gap-1 text-xs">
+          <TabsTrigger value="address" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-sm">
             <MapPin className="h-3.5 w-3.5" />
             Address
           </TabsTrigger>
-          <TabsTrigger value="contact" className="gap-1 text-xs">
+          <TabsTrigger value="contact" className="gap-1.5 text-xs rounded-lg data-[state=active]:shadow-sm">
             <Phone className="h-3.5 w-3.5" />
             Contact
           </TabsTrigger>
         </TabsList>
 
-        {/* General Tab */}
-        <TabsContent value="general" className="space-y-3">
+        <TabsContent value="general" className="mt-4 space-y-3">
           {matchedParty && partyDiffs.length > 0 ? (
             partyDiffs.map((diff) => (
-              <DiffFieldRow
-                key={diff.field}
-                diff={diff}
-                onEditScanned={(val) => handleDiffEdit(diff.field, val)}
-              />
+              <DiffFieldRow key={diff.field} diff={diff} onEditScanned={(val) => handleDiffEdit(diff.field, val)} />
             ))
           ) : (
             <div className="space-y-3">
@@ -193,21 +173,24 @@ export const ReconciliationScreen: React.FC = () => {
           )}
         </TabsContent>
 
-        {/* Address Tab */}
-        <TabsContent value="address">
-          <Accordion type="multiple" defaultValue={['addr-0']} className="space-y-2">
+        <TabsContent value="address" className="mt-4">
+          <Accordion type="multiple" defaultValue={['addr-0']} className="space-y-3">
             {draftAddresses.map((addr, i) => (
-              <AccordionItem key={i} value={`addr-${i}`} className="rounded-lg border bg-card">
-                <AccordionTrigger className="px-4 py-3 text-sm font-medium hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                    {addr.name || addr.street || `Address ${i + 1}`}
-                    <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+              <AccordionItem key={i} value={`addr-${i}`} className="rounded-xl border bg-card overflow-hidden">
+                <AccordionTrigger className="px-4 py-3.5 text-sm font-medium hover:no-underline">
+                  <span className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent">
+                      <MapPin className="h-3.5 w-3.5 text-accent-foreground" />
+                    </div>
+                    <span className="text-left">
+                      {addr.name || addr.street || `Address ${i + 1}`}
+                    </span>
+                    <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
                       {addr.vcard_type}
                     </span>
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="space-y-2 px-4 pb-4">
+                <AccordionContent className="space-y-2.5 px-4 pb-4">
                   <EditableField label="Building" value={addr.name} onChange={(v) => updateDraftAddress(i, { name: v })} />
                   <EditableField label="Street" value={addr.street} onChange={(v) => updateDraftAddress(i, { street: v })} />
                   <EditableField label="City" value={addr.city} onChange={(v) => updateDraftAddress(i, { city: v })} />
@@ -216,11 +199,10 @@ export const ReconciliationScreen: React.FC = () => {
                   <EditableField label="Subdivision" value={addr.subdivision_name} onChange={(v) => updateDraftAddress(i, { subdivision_name: v })} />
 
                   {matchedAddresses.length > 0 && (
-                    <div className="mt-3 rounded-md border border-dashed border-muted-foreground/30 p-3">
-                      <p className="erp-field-label mb-2">Existing Address</p>
+                    <div className="mt-3 rounded-xl border border-dashed border-muted-foreground/20 bg-muted/50 p-3.5">
+                      <p className="erp-field-label mb-1.5">Existing Address</p>
                       <p className="text-sm text-muted-foreground">
-                        {matchedAddresses[0]?.street}, {matchedAddresses[0]?.postal_code}{' '}
-                        {matchedAddresses[0]?.city}
+                        {matchedAddresses[0]?.street}, {matchedAddresses[0]?.postal_code} {matchedAddresses[0]?.city}
                       </p>
                     </div>
                   )}
@@ -230,8 +212,7 @@ export const ReconciliationScreen: React.FC = () => {
           </Accordion>
         </TabsContent>
 
-        {/* Contact Tab */}
-        <TabsContent value="contact" className="space-y-2">
+        <TabsContent value="contact" className="mt-4 space-y-3">
           {draftContacts.map((contact, i) => (
             <EditableContactRow
               key={i}
@@ -243,51 +224,50 @@ export const ReconciliationScreen: React.FC = () => {
           ))}
 
           {matchedContacts.length > 0 && (
-            <div className="mt-3">
-              <p className="erp-field-label mb-2 px-1">Existing Contacts</p>
-              {matchedContacts.map((c) => (
-                <div
-                  key={c.id}
-                  className="mb-1 flex items-center gap-3 rounded-lg border border-dashed border-muted-foreground/30 px-4 py-2"
-                >
-                  <ContactIcon type={c.type} />
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">{c.type}</p>
-                    <p className="text-sm text-foreground">{c.value}</p>
+            <div className="mt-4">
+              <p className="erp-field-label mb-2.5 px-1">Existing Contacts</p>
+              <div className="space-y-2">
+                {matchedContacts.map((c) => (
+                  <div key={c.id} className="flex items-center gap-3 rounded-xl border border-dashed border-muted-foreground/20 bg-muted/50 px-4 py-3">
+                    <ContactIcon type={c.type} />
+                    <div className="flex-1 min-w-0">
+                      <p className="erp-field-label">{c.type}</p>
+                      <p className="text-sm text-foreground truncate">{c.value}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 px-4 py-3 backdrop-blur-sm">
-        <div className="flex gap-2">
+      {/* Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/90 px-5 py-4 backdrop-blur-xl">
+        <div className="flex gap-2.5">
           {matchedParty ? (
             <>
-              <Button variant="outline" className="flex-1" onClick={handleCancel}>
-                <X className="mr-1.5 h-3.5 w-3.5" />
+              <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={handleCancel}>
+                <X className="mr-1.5 h-4 w-4" />
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={() => handleAction('update')}>
-                <Check className="mr-1.5 h-3.5 w-3.5" />
+              <Button className="flex-1 h-11 rounded-xl shadow-md shadow-primary/20" onClick={() => handleAction('update')}>
+                <Check className="mr-1.5 h-4 w-4" />
                 Update
               </Button>
-              <Button variant="secondary" className="flex-1" onClick={() => handleAction('create')}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <Button variant="secondary" className="flex-1 h-11 rounded-xl" onClick={() => handleAction('create')}>
+                <Plus className="mr-1.5 h-4 w-4" />
                 New
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" className="flex-1" onClick={handleCancel}>
-                <X className="mr-1.5 h-3.5 w-3.5" />
+              <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={handleCancel}>
+                <X className="mr-1.5 h-4 w-4" />
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={() => handleAction('create')}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <Button className="flex-1 h-11 rounded-xl shadow-md shadow-primary/20" onClick={() => handleAction('create')}>
+                <Plus className="mr-1.5 h-4 w-4" />
                 Create New
               </Button>
             </>
@@ -295,9 +275,8 @@ export const ReconciliationScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>
               {pendingAction === 'create' ? 'Create New Party?' : 'Update Existing Party?'}
@@ -309,10 +288,10 @@ export const ReconciliationScreen: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowConfirm(false)}>
+            <Button variant="outline" onClick={() => setShowConfirm(false)} className="rounded-xl">
               Go Back
             </Button>
-            <Button onClick={confirmAction}>Confirm</Button>
+            <Button onClick={confirmAction} className="rounded-xl">Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -320,7 +299,8 @@ export const ReconciliationScreen: React.FC = () => {
   );
 };
 
-// Editable field component
+/* ---------- Sub-components ---------- */
+
 const EditableField: React.FC<{ label: string; value?: string; onChange: (value: string) => void }> = ({ label, value, onChange }) => {
   const [editing, setEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value || '');
@@ -331,8 +311,8 @@ const EditableField: React.FC<{ label: string; value?: string; onChange: (value:
   };
 
   return (
-    <div className="rounded-md border bg-card px-3 py-2">
-      <p className="erp-field-label">{label}</p>
+    <div className="rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/20">
+      <p className="erp-field-label mb-1">{label}</p>
       {editing ? (
         <Input
           value={localValue}
@@ -340,14 +320,14 @@ const EditableField: React.FC<{ label: string; value?: string; onChange: (value:
           onBlur={handleSave}
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           autoFocus
-          className="mt-1 h-7 text-sm"
+          className="h-8 text-sm rounded-lg border-primary/30 bg-accent/50"
         />
       ) : (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 group">
           <p className="erp-field-value flex-1">{value || '—'}</p>
           <button
             onClick={() => { setLocalValue(value || ''); setEditing(true); }}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
+            className="shrink-0 opacity-40 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
           >
             <Pencil className="h-3 w-3" />
           </button>
@@ -357,7 +337,6 @@ const EditableField: React.FC<{ label: string; value?: string; onChange: (value:
   );
 };
 
-// Editable contact row
 const EditableContactRow: React.FC<{ type: string; value: string; vcardType: string; onChange: (value: string) => void }> = ({ type, value, vcardType, onChange }) => {
   const [editing, setEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
@@ -368,11 +347,11 @@ const EditableContactRow: React.FC<{ type: string; value: string; vcardType: str
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
+    <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3.5 transition-colors hover:border-primary/20">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
         <ContactIcon type={type} />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <p className="erp-field-label">{type}</p>
         {editing ? (
           <Input
@@ -381,21 +360,21 @@ const EditableContactRow: React.FC<{ type: string; value: string; vcardType: str
             onBlur={handleSave}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             autoFocus
-            className="mt-0.5 h-7 text-sm"
+            className="mt-0.5 h-8 text-sm rounded-lg"
           />
         ) : (
-          <div className="flex items-center gap-1">
-            <p className="text-sm font-medium text-foreground flex-1">{value}</p>
+          <div className="flex items-center gap-2 group">
+            <p className="text-sm font-medium text-foreground flex-1 truncate">{value}</p>
             <button
               onClick={() => { setLocalValue(value); setEditing(true); }}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
+              className="shrink-0 opacity-40 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
             >
               <Pencil className="h-3 w-3" />
             </button>
           </div>
         )}
       </div>
-      <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+      <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
         {vcardType}
       </span>
     </div>
@@ -403,7 +382,7 @@ const EditableContactRow: React.FC<{ type: string; value: string; vcardType: str
 };
 
 const ContactIcon: React.FC<{ type: string }> = ({ type }) => {
-  const cls = 'h-4 w-4 text-muted-foreground';
+  const cls = 'h-4 w-4 text-accent-foreground';
   switch (type) {
     case 'email':
       return <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
