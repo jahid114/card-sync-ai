@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Pencil } from 'lucide-react';
 import type { FieldDiff } from '@/types/trytonSchema';
 
 interface DiffFieldRowProps {
   diff: FieldDiff;
   onUseScanned?: () => void;
   onUseExisting?: () => void;
+  onEditScanned?: (value: string) => void;
 }
 
-export const DiffFieldRow: React.FC<DiffFieldRowProps> = ({ diff, onUseScanned, onUseExisting }) => {
+export const DiffFieldRow: React.FC<DiffFieldRowProps> = ({ diff, onUseScanned, onUseExisting, onEditScanned }) => {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(diff.scanned);
+
+  const handleSave = () => {
+    setEditing(false);
+    onEditScanned?.(editValue);
+  };
+
   return (
     <div
       className={cn(
@@ -18,23 +29,38 @@ export const DiffFieldRow: React.FC<DiffFieldRowProps> = ({ diff, onUseScanned, 
     >
       <div className="space-y-1">
         <span className="erp-field-label">{diff.field} (Scanned)</span>
-        <div
-          className={cn(
-            'erp-field-value cursor-pointer rounded px-2 py-1 transition-colors hover:bg-primary/10',
-            diff.isDifferent && 'font-semibold'
-          )}
-          onClick={onUseScanned}
-          title="Use scanned value"
-        >
-          {diff.scanned || '—'}
-        </div>
+        {editing ? (
+          <Input
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+            autoFocus
+            className="h-7 text-sm"
+          />
+        ) : (
+          <div
+            className={cn(
+              'erp-field-value flex items-center gap-1 cursor-pointer rounded px-2 py-1 transition-colors hover:bg-primary/10',
+              diff.isDifferent && 'font-semibold'
+            )}
+            onClick={onUseScanned}
+            title="Use scanned value"
+          >
+            <span className="flex-1">{diff.scanned || '—'}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setEditValue(diff.scanned); setEditing(true); }}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          </div>
+        )}
       </div>
       <div className="space-y-1">
         <span className="erp-field-label">{diff.field} (Database)</span>
         <div
-          className={cn(
-            'erp-field-value cursor-pointer rounded px-2 py-1 transition-colors hover:bg-primary/10'
-          )}
+          className="erp-field-value cursor-pointer rounded px-2 py-1 transition-colors hover:bg-primary/10"
           onClick={onUseExisting}
           title="Use existing value"
         >
